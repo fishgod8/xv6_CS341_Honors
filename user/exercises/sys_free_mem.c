@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-int main() {
+// Implementation of free mem using C libraries 
+// (need another version that evaluates kalloc)
+int sys_free_mem() {
     FILE* fp = fopen("/proc/meminfo", "r");
     if (fp == NULL) {
         printf("can't open file");
