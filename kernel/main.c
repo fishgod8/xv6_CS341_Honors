@@ -16,6 +16,9 @@ main()
     printk("\n");
     printk("xv6 kernel is booting\n");
     printk("\n");
+    printk("test dtb\n");
+    uint32 total_size = parse_dtb();
+    printk("Total Physical Memory: %d\n", total_size);
     kinit();            // physical page allocator
     kvminit();          // create kernel page table
     kvminithart();      // turn on paging

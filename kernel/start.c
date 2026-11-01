@@ -6,14 +6,17 @@
 
 void main();
 void timerinit();
+void * dtb;
 
 // entry.S needs one stack per CPU.
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
 
 // entry.S jumps here in machine mode on stack0.
 void
-start()
+start(uint64 hartid, uint64 dtb_ptr)
 {
+    // set dtb pointer for parsing the device tree
+    dtb = (void *) dtb_ptr;
   // set M Previous Privilege mode to Supervisor, for mret.
   unsigned long x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;

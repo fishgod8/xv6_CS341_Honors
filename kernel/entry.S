@@ -11,9 +11,9 @@ _entry:
         # sp = stack0 + ((hartid + 1) * 4096)
         la sp, stack0
         li a0, 1024*4
-        csrr a1, mhartid
-        addi a1, a1, 1
-        mul a0, a0, a1
+        csrr t1, mhartid
+        addi t1, t1, 1
+        mul a0, a0, t1
         add sp, sp, a0
         # jump to start() in start.c
         call start 

@@ -10,6 +10,12 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+// start.c
+extern void* dtb;
+
+// dtb.c
+uint32 parse_dtb(void);
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
