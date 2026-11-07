@@ -14,7 +14,7 @@ struct superblock;
 extern void* dtb;
 
 // dtb.c
-uint32 parse_dtb(void);
+uint64 parse_dtb(void);
 
 // bio.c
 void            binit(void);
