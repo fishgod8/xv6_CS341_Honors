@@ -43,34 +43,58 @@ uint64 parse_dtb() {
         // uint32* end_struct_block = (uint32*)((char*)fdt_struct_block + big_to_little(ptr->size_dt_struct));
         // char* end_strings_block = fdt_strings_block + big_to_little(ptr->size_dt_strings);
         // check that we're still in bounds of struct block
-		uint32 curr_token;
-		while ((curr_token = big_to_little(*fdt_struct_block++)) != FDT_END) {
-			// search for FDT_BEGIN_NODE token
-			if (curr_token == FDT_BEGIN_NODE) {
-				// read payload
-				char* payload = (char*) fdt_struct_block;
-				char* node_name = "memory";
-				if (!strncmp(payload, node_name, strlen(node_name))) {
-					// ceil integer rounding to accommodate for 32-bit boundary
-					fdt_struct_block += ((strlen(payload) + 1) + 3) / 4; 
-					curr_token = big_to_little(*fdt_struct_block++);
-					while(curr_token != FDT_BEGIN_NODE && curr_token != FDT_END_NODE) {
-						// loop till FDT_PROP found
-						while ((curr_token = big_to_little(*fdt_struct_block)) != FDT_PROP) {fdt_struct_block++;} 
-						struct fdt_prop_info* curr_prop = (struct fdt_prop_info*) fdt_struct_block;
-						char * prop_name = fdt_strings_block + curr_prop->nameoff;
-						if (!strncmp(prop_name, "reg", strlen("reg"))) {
-							if (curr_prop->len == 16) {
-								return ((uint64)big_to_little(*(fdt_struct_block + 4)) << 32) | ((uint64)big_to_little(*(fdt_struct_block + 5)));
-							} else {
-								panic("unexpected #address/#size cell num");
-							}
-						}
-					}
+		// uint32 curr_token;
+		// while ((curr_token = big_to_little(*fdt_struct_block++)) != FDT_END) {
+		// 	// search for FDT_BEGIN_NODE token
+		// 	if (curr_token == FDT_BEGIN_NODE) {
+		// 		// read payload
+		// 		char* payload = (char*) fdt_struct_block;
+		// 		char* node_name = "memory";
+		// 		if (!strncmp(payload, node_name, strlen(node_name))) {
+		// 			// ceil integer rounding to accommodate for 32-bit boundary
+		// 			fdt_struct_block += ((strlen(payload) + 1) + 3) / 4; 
+		// 			curr_token = big_to_little(*fdt_struct_block++);
+		// 			while(curr_token != FDT_BEGIN_NODE && curr_token != FDT_END_NODE) {
+		// 				// loop till FDT_PROP found
+		// 				while ((curr_token = big_to_little(*fdt_struct_block++)) != FDT_PROP) {} 
+		// 				struct fdt_prop_info* curr_prop = (struct fdt_prop_info*) fdt_struct_block;
+		// 				char * prop_name = fdt_strings_block + big_to_little(curr_prop->nameoff);
+		// 				if (!strncmp(prop_name, "reg", strlen("reg"))) {
+		// 					if (curr_prop->len == 16) {
+		// 						return ((uint64)big_to_little(*(fdt_struct_block + 5)) << 32) | ((uint64)big_to_little(*(fdt_struct_block + 6)));
+		// 					} else {
+		// 						panic("unexpected #address/#size cell num");
+		// 					}
+		// 				}
+		// 			}
 					
+		// 		}
+		// 	}
+		// }
+		int in_memory_node = 0;
+		while (1) {
+			uint32 curr_token = big_to_little(*fdt_struct_block++);
+			if (curr_token == FDT_BEGIN_NODE) {
+				char * payload = (char *) fdt_struct_block;
+				char * node_name = "memory";
+				if (!strncmp(payload, node_name, strlen(node_name))) {
+					in_memory_node = 1;
 				}
+				fdt_struct_block += ((strlen(payload) + 1) + 3) / 4;
+			} else if (curr_token == FDT_PROP) {
+				uint32 len = big_to_little(*fdt_struct_block++);
+				uint32 nameoff = big_to_little(*fdt_struct_block++);
+				if (in_memory_node && !strncmp(fdt_strings_block + nameoff, "reg", 3)) {
+					return ((uint64)big_to_little(fdt_struct_block[2]) << 32) | ((uint64)big_to_little(fdt_struct_block[3]));
+				}
+				fdt_struct_block += (len + 3) / 4;
+			} else if (curr_token == FDT_END_NODE) {
+				in_memory_node = 0;
+			} else if (curr_token == FDT_END) {
+				break;
 			}
-		}
+		}	
+		return 0;
         
         // check whether associated node name is "memory"
         // if not, continue searching (can search using uint32*, as tokens are separated by 32 bit boundary)
