@@ -12,6 +12,7 @@ struct superblock;
 
 // start.c
 extern void* dtb;
+extern pagetable_t kernel_pagetable;
 
 // dtb.c
 uint64 parse_dtb(void);
@@ -167,6 +168,7 @@ pagetable_t     uvmcreate(void);
 uint64          uvmalloc(pagetable_t, uint64, uint64, int);
 uint64          uvmdealloc(pagetable_t, uint64, uint64);
 int             uvmcopy(pagetable_t, pagetable_t, uint64);
+void 			u2kvmcopy(pagetable_t, pagetable_t, uint64, uint64);
 void            uvmfree(pagetable_t, uint64);
 void            uvmunmap(pagetable_t, uint64, uint64, int);
 void            uvmclear(pagetable_t, uint64);

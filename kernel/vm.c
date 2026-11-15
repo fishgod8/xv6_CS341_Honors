@@ -47,9 +47,19 @@ kvmmake(void)
   kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
 
   // allocate and map a kernel stack for each process.
-  proc_mapstacks(kpgtbl);
+//   proc_mapstacks(kpgtbl);
 
   return kpgtbl;
+}
+
+void u2kvmcopy(pagetable_t old, pagetable_t new, uint64 start, uint64 end) {
+	for (uint64 va = PGROUNDUP(start); va < end; va += PGSIZE) {
+		pte_t* old_pte = walk(old, va, 0);
+		pte_t old_pa = PTE2PA(*old_pte);
+		pte_t flags = PTE_FLAGS(*old_pte);
+		flags &= ~PTE_U; // set pte u to false to indicate in supervisor/kernel mode
+		mappages(new, va, PGSIZE, old_pa, flags);
+	}
 }
 
 // add a mapping to the kernel page table.
@@ -67,6 +77,7 @@ void
 kvminit(void)
 {
   kernel_pagetable = kvmmake();
+  proc_mapstacks(kernel_pagetable);
 }
 
 // Switch the current CPU's h/w page table register to

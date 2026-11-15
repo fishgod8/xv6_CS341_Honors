@@ -40,6 +40,7 @@ proc_mapstacks(pagetable_t kpgtbl)
       panic("kalloc");
     uint64 va = KSTACK((int)(p - proc));
     kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+	p->kstack_pa = (uint64)pa;
   }
 }
 
@@ -131,6 +132,10 @@ found:
     release(&p->lock);
     return 0;
   }
+
+  // allocate private kernel table
+  p->k_pagetable = kvmmake();
+  kvmmap(p->k_pagetable, p->kstack, p->kstack_pa, PGSIZE, PTE_R | PTE_W);
 
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
@@ -273,6 +278,7 @@ kfork(void)
     release(&np->lock);
     return -1;
   }
+  u2kvm_copy(p->k_pagetable, np->k_pagetable, 0, p->sz);
   np->sz = p->sz;
 
   // copy saved user registers.
@@ -450,7 +456,11 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+		w_satp(MAKE_SATP(p->k_pagetable));
+		sfence_vma();
         swtch(&c->context, &p->context);
+		w_satp(kernel_pagetable);
+		sfence_vma();
 
         // Don't re-enable interrupts on release.
         mycpu()->intena = 0;

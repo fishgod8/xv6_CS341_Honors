@@ -130,6 +130,8 @@ kexec(char *path, char **argv)
   safestrcpy(p->name, last, sizeof(p->name));
 
   // Commit to the user image.
+  uvmunmap(p->k_pagetable, 0, PGROUNDUP(oldsz)/PGSIZE, 0);
+  u2kvmcopy(pagetable, p->k_pagetable, 0, PGROUNDUP(sz));
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
