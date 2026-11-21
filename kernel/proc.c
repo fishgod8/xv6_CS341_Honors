@@ -227,6 +227,7 @@ userinit(void)
 
   p = allocproc();
   initproc = p;
+  u2kvmcopy(initproc->pagetable, p->k_pagetable, 0, p->sz);
 
   p->cwd = namei("/");
 
@@ -244,6 +245,7 @@ growproc(int n)
   struct proc *p = myproc();
 
   sz = p->sz;
+  uint64 old_sz = sz;
   if (n > 0) {
     if (sz + n > TRAPFRAME) {
       return -1;
@@ -251,8 +253,10 @@ growproc(int n)
     if ((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
       return -1;
     }
+	u2kvmcopy(p->pagetable, p->k_pagetable, old_sz, old_sz + n);
   } else if (n < 0) {
     sz = uvmdealloc(p->pagetable, sz, sz + n);
+	uvmunmap(p->k_pagetable, PGROUNDUP(sz), (PGROUNDUP(sz) - PGROUNDUP(old_sz))/PGSIZE, 0);
   }
   p->sz = sz;
   return 0;
